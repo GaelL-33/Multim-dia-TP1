@@ -58,13 +58,13 @@
 \newpage
 
 \section{Introduction}
-Nous comparons Huffman à deux méthodes sur trois fichiers : un programme Python, un texte littéraire et un fichier météo au format CSV. Le but est de réduire leur taille sans perdre d'information, puis de vérifier que le décodage restitue les fichiers d'origine.
+Dans ce TP, on a décidé de comparer Huffman à deux méthodes sur les trois fichiers du TP (un programme, un texte littéraire en francais et un fichier météo au format CSV). On a réfléchi puis essayé un codage prédictif suivi de Golomb, mais les résultats de compression étaient moins bons que Huffman sur tous les fichiers. On a donc essayé puis retenu LZ77, qui bat Huffman sur le code et le CSV mais pas sur le texte littéraire.
 
 \section{Analyse exploratoire}
-\subsection{Question 1 : structure des fichiers}
+\subsection{Question 1}
 Les fréquences des octets sont inégales : l'entropie mesurée va de 4,368 à 4,969 bits par octet, contre 8 bits pour un octet non compressé. Huffman peut donc réduire la taille en donnant des codes courts aux octets fréquents. En revanche, il ne tient pas compte directement des suites de caractères qui se répètent.
 
-Le code contient des espaces, des mots-clés et des structures récurrentes. Le CSV répète ses en-têtes et certains champs. Le texte contient des mots récurrents, mais peu de longues suites identiques. Ces différences expliquent pourquoi une méthode peut bien fonctionner sur un fichier et moins bien sur un autre.
+Le code contient des espaces (nottament Python à cause des indentations), des mots-clés et des structures récurrentes. Le CSV répète ses en-têtes et certains champs. Le texte contient des mots récurrents, mais peu de longues suites identiques. Ces différences expliquent pourquoi une méthode peut bien fonctionner sur un fichier et moins bien sur un autre.
 
 \begin{table}[H]
     \centering
@@ -84,30 +84,30 @@ Le code contient des espaces, des mots-clés et des structures récurrentes. Le 
 
 L'entropie est calculée par $H_0=-\sum_b p_b\log_2p_b$. Les plages de même octet sont courtes dans le texte et le CSV. Une compression par plages (RLE) est donc peu adaptée à ces deux fichiers.
 
-\subsection{Question 2 : méthodes testées}
-Nous avons d'abord essayé une prédiction différentielle suivie du codage de Golomb, une méthode étudiée en cours~\cite{cours}. La prédiction transforme chaque octet en différence avec le précédent; le codage ZigZag rend les différences négatives non négatives. Cette méthode ne donne pas de meilleurs résultats que Huffman dans nos essais.
+\subsection{Question 2}
+Nous avons d'abord essayé une prédiction différentielle suivie du codage de Golomb (vu en cours). On a d'abord essayé cette méthode car un codage différentiel sur des fichiers avec beaucoup de répétitions donne une distribution des octets proche d'une distribution géométrique, ce qui est favorable au codage de Golomb. On a utilisé un codage ZigZag plutot qu'une approche naïve (modulo 255) pour avoir une meilleure distribution. Malheureusement, cette méthode ne donne pas de meilleurs résultats que Huffman dans nos essais. On suppose que c'est parce que les fichiers contiennent trop de caractères différents et on une entropie trop grande.
 
-Nous avons ensuite retenu LZ77. Cette méthode remplace une suite déjà rencontrée par une référence, ce qui devrait aider pour le code et les champs répétés du CSV. Le texte littéraire contient moins de longues répétitions exactes; le coût des références risque donc d'y annuler le gain. Les résultats permettent de vérifier cette hypothèse.
+Nous avons ensuite essayé le codage LZ77. Cette méthode remplace une suite déjà rencontrée par une référence, ce qui devrait aider pour le code et les champs répétés du CSV. Le texte littéraire contient moins de longues répétitions exactes, lecoût des références risque donc d'y annuler le gain. Dans nos essais, LZ77 a surpassé Huffman sur le code et le CSV, mais pas sur le texte littéraire. On a donc retenu LZ77 pour la suite.
 
 \section{Implémentation et évaluation}
-\subsection{Question 3 : implémentation}
-Le notebook contient Huffman, Golomb prédictif et LZ77, ainsi que leurs essais de décodage. Le code Huffman suit l'exemple vu en cours. Pour LZ77, la fenêtre de recherche fait 32\,768 octets et la longueur maximale examinée est de 258 octets. Une suite répétée de trois octets ou plus devient une référence; sinon, l'octet est écrit tel quel. Le flux LZ77 est empaqueté en octets et inclut le nombre de jetons. Les tests du notebook vérifient la reconstruction des trois fichiers. Les outils utilisés sont Python, NumPy, Matplotlib et AnyTree~\cite{outils}.
+\subsection{Question 3}
+Le notebook contient Huffman, Golomb prédictif et LZ77, ainsi que leurs essais de décodage. Le code Huffman suit l'exemple vu en cours. Pour LZ77, la fenêtre de recherche fait 32\,768 octets et la longueur maximale examinée est de 258 octets. Une suite répétée de trois octets ou plus devient une référence. Sinon, l'octet est écrit tel quel. Les tests du notebook vérifient la reconstruction des trois fichiers. Les outils utilisés sont Python, NumPy, Matplotlib et AnyTree.
 
 La Figure~\ref{fig:residus} montre les résidus de la prédiction ZigZag. Le CSV a les résidus les plus faibles en moyenne, mais cela ne suffit pas à rendre le codage de Golomb plus efficace que Huffman.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{residus_zigzag.png}
-    \caption{Résidus ZigZag après prédiction. Axe horizontal : valeur du résidu [sans unité]. Axe vertical : nombre d'octets [occurrences].}
+    \caption{Résidus ZigZag après prédiction. Axe horizontal : valeur du résidu. Axe vertical : nombre d'octets.}
     \label{fig:residus}
 \end{figure}
 
-\subsection{Question 4 : résultats}
-Le Tableau~\ref{tab:resultats} reprend les tailles affichées par le notebook. La taille de Huffman comprend une estimation du dictionnaire. La taille de Golomb correspond au nombre de bits divisé par huit; l'en-tête et le remplissage final ne sont pas comptés. Pour LZ77, le flux empaqueté et les quatre octets indiquant le nombre de jetons sont comptés. Les tailles ne comprennent donc pas toutes les mêmes frais de formatage et restent des estimations de cette implémentation.
+\subsection{Question 4}
+Le Tableau~\ref{tab:resultats} reprend les tailles affichées par le notebook. La taille de Huffman comprend une estimation du dictionnaire. La taille de Golomb correspond au nombre de bits divisé par huit. L'en-tête et le remplissage final ne sont pas comptés. Pour LZ77, les quatre octets indiquant le nombre de jetons sont comptés. Les tailles ne comprennent donc pas toutes exactement le même formatage et restent des estimations, mais les écarts observés sont assez grands, pour que ces quelques octets ne changent pas nos interprétations.
 
 \begin{table}[H]
     \centering
-    \caption{Tailles estimées par le notebook [octets] et pourcentage de la taille originale [\%].}
+    \caption{Tailles estimées [octets] et pourcentage de la taille originale [\%].}
     \label{tab:resultats}
     \small
     \resizebox{\textwidth}{!}{%
@@ -125,20 +125,15 @@ Le Tableau~\ref{tab:resultats} reprend les tailles affichées par le notebook. L
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.88\textwidth]{comparaison_tailles.png}
-    \caption{Comparaison Huffman--LZ77 et gain ou perte observé. Les tailles sont en octets; l'amélioration est en pourcentage par rapport à Huffman.}
+    \caption{Comparaison Huffman--LZ77 et gain ou perte observé. Les tailles sont en octets, l'amélioration est en pourcentage par rapport à Huffman.}
     \label{fig:tailles}
 \end{figure}
 
-LZ77 améliore la taille par rapport à Huffman de 26,9\,\% pour le code et de 55,7\,\% pour le CSV. Pour le texte, il produit un fichier 29,8\,\% plus grand. Les références LZ77 sont efficaces quand les suites répétées sont assez longues; sur le texte, elles coûtent plus cher que les répétitions ne rapportent. Golomb prédictif reste derrière Huffman sur les trois fichiers, et l'ajout d'un deuxième Huffman ne l'améliore pas. Ainsi, le résultat attendu est obtenu pour deux fichiers sur trois, mais pas pour le texte littéraire.
+LZ77 améliore la taille par rapport à Huffman de 26,9\,\% pour le code et de 55,7\,\% pour le CSV. Pour le texte, il produit un fichier 29,8\,\% plus grand. Les références LZ77 sont efficaces quand les suites répétées sont assez longues (sur le texte, elles coûtent plus cher que les répétitions ne rapportent). Golomb prédictif reste derrière Huffman sur les trois fichiers, et l'ajout d'un deuxième Huffman ne l'améliore pas (ce qui était prévisible). 
 
 \section{Conclusion}
-LZ77 compresse mieux que Huffman pour le code et le CSV, mais moins bien pour le texte littéraire. La méthode n'atteint donc pas l'objectif de surpasser Huffman sur les trois fichiers. Les résultats confirment toutefois que le choix de l'algorithme doit tenir compte des répétitions propres à chaque type de texte.
+Notre méthode choisie (LZ77) compresse mieux que Huffman pour le code et le CSV, mais moins bien pour le texte littéraire. La méthode n'atteint donc pas l'objectif initial de surpasser Huffman sur les trois fichiers. Les résultats confirment toutefois que le choix de l'algorithme doit tenir compte des répétitions propres à chaque type de texte.
 
-\begin{thebibliography}{9}
-    \bibitem{cours}
-    G.-A. Bilodeau, \textit{INF8770, chapitre 2 : compression sans perte}, notes et notebooks du cours.
-    \bibitem{outils}
-    Documentations de NumPy, Matplotlib et AnyTree : \url{https://numpy.org/doc/}, \url{https://matplotlib.org/stable/} et \url{https://anytree.readthedocs.io/}.
-\end{thebibliography}
+Enfin, on a également essayé de combiner LZ77 et Huffman, mais les résultats n'étaient pas bon. On pense que c'est un problème dans notre code (que l'on n'a pas réussi à résoudre), car pour comparer on a demandé à ChatGPT de le réimplémenter depuis zéro et les résultats obtenus étaient meilleurs que Huffman sur les trois fichiers.
 
 \end{document}
